@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HSK 3.0 Versi 3.0 — Hanzi Murni</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      background: linear-gradient(135deg, #6a1b9a, #0288d1, #6a1b9a);
+      font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; overflow: hidden;
+    }
+    .container { 
+      width: 1024px; height: 704px; /* 16:11 */
+      background: white; border-radius: 20px; 
+      box-shadow: 0 25px 80px rgba(0,0,0,0.45);
+      overflow: hidden; position: relative;
+    }
+    .screen { 
+      display: none; flex-direction: column; align-items: center; 
+      justify-content: center; padding: 20px; text-align: center; 
+      height: 100%; background: white;
+    }
+    .screen.active { display: flex; }
+    h1 { font-size: 32px; color: #4a148c; margin-bottom: 10px; }
+    .subtitle { font-size: 20px; color: #01579b; font-weight: bold; margin-bottom: 15px; }
+    p { font-size: 16px; color: #37474f; max-width: 800px; line-height: 1.5; }
+    
+    .mode-btns { 
+      display: flex; flex-wrap: wrap; gap: 15px; margin: 20px 0; justify-content: center;
+    }
+    .mode-btn { 
+      background: #6a1b9a; color: white; border: none; 
+      padding: 16px 25px; font-size: 18px; border-radius: 14px; 
+      cursor: pointer; font-weight: bold;
+      transition: all 0.25s; width: 200px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .mode-btn:hover { 
+      background: #4a148c; transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(106,27,154,0.4);
+    }
+    .mode-btn.timer { background: #d32f2f; }
+    .mode-btn.timer:hover { background: #9a000d; }
+    .mode-btn.practice { background: #0288d1; }
+    .mode-btn.practice:hover { background: #01579b; }
+    .mode-icon { font-size: 24px; margin-bottom: 6px; }
+    
+    .info-box {
+      background: #f3e5f5; border-radius: 18px; padding: 22px;
+      width: 100%; max-width: 780px; margin: 15px 0;
+      text-align: left; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .word-large { 
+      font-size: 60px; font-weight: bold; color: #4a148c; 
+      margin: 12px 0; font-family: 'Microsoft YaHei';
+      min-height: 80px;
+    }
+    .pinyin { 
+      font-size: 22px; font-weight: 500; 
+      margin: 10px 0; color: #6a1b9a;
+      font-family: 'Arial Unicode MS', sans-serif;
+    }
+    .pinyin span { 
+      padding: 0 4px; border-radius: 5px;
+    }
+    .tone1 { background: #e1bee7; color: #4a148c; } 
+    .tone2 { background: #ffecb3; color: #f57c00; } 
+    .tone3 { background: #ffcdd2; color: #c62828; } 
+    .tone4 { background: #bbdefb; color: #01579b; } 
+    .tone5 { background: #e0e0e0; color: #616161; } 
+    
+    .example { 
+      font-size: 18px; margin: 18px 0; line-height: 1.6;
+      padding: 14px 18px; background: #e3f2fd; border-radius: 12px;
+      border-left: 6px solid #2196f3;
+    }
+    .example-zh { 
+      font-family: 'Microsoft YaHei'; font-size: 20px;
+      color: #4a148c; margin-bottom: 8px;
+    }
+    .example-id { 
+      font-style: italic; color: #01579b; font-size: 17px;
+    }
+    
+    .options { 
+      display: grid; grid-template-columns: 1fr 1fr; 
+      gap: 15px; width: 100%; max-width: 750px; margin-top: 12px;
+    }
+    .option { 
+      background: #f3e5f5; padding: 16px; border-radius: 14px; 
+      font-size: 17px; cursor: pointer; transition: 0.22s;
+      border: 3px solid #ce93d8;
+      display: flex; align-items: center;
+    }
+    .option::before {
+      content: "•"; margin-right: 12px; font-size: 26px;
+      color: #6a1b9a;
+    }
+    .option:hover { 
+      background: #e1bee7; border-color: #ab47bc;
+      transform: scale(1.03);
+    }
+    .option.correct { 
+      background: #c8e6c9 !important; border-color: #81c784;
+      color: #1b5e20;
+    }
+    .option.correct::before {
+      content: "✓"; color: #4caf50; font-weight: bold;
+    }
+    .option.wrong { 
+      background: #ffcdd2 !important; border-color: #ef9a9a;
+      color: #c62828;
+    }
+    .option.wrong::before {
+      content: "✗"; color: #f44336; font-weight: bold;
+    }
+    
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; justify-content: center;
+    }
+    .btn { 
+      background: #6a1b9a; color: white; border: none; 
+      padding: 12px 24px; font-size: 17px; border-radius: 10px; 
+      cursor: pointer; font-weight: bold;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #4a148c; }
+    .btn-audio { background: #0288d1; }
+    .btn-audio:hover { background: #01579b; }
+    
+    .progress {
+      width: 100%; max-width: 680px; margin: 15px 0;
+    }
+    .progress-bar {
+      width: 100%; height: 12px;
+      background: #e0e0e0; border-radius: 6px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: #6a1b9a; 
+      border-radius: 6px; width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-text {
+      font-size: 17px; color: #4a148c; margin-top: 8px;
+      font-weight: bold;
+    }
+    
+    .timer { 
+      font-size: 26px; font-weight: bold; 
+      color: #d32f2f; margin: 15px 0; 
+      background: #ffebee; padding: 10px 22px;
+      border-radius: 50px; min-width: 200px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px;
+    }
+    
+    .summary { 
+      background: #f9f9f9; padding: 22px; border-radius: 16px;
+      max-height: 250px; overflow-y: auto; margin: 15px 0;
+      text-align: left; font-size: 15px; width: 100%;
+      max-width: 780px;
+    }
+    
+    footer { 
+      position: absolute; bottom: 12px; 
+      font-size: 13px; color: #757575;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Layar Mulai -->
+    <div id="screen-start" class="screen active">
+      <h1>🎓 HSK 3.0 Versi 3.0 — Hanzi Murni</h1>
+      <div class="subtitle">Intermediate Level I • Kalimat dalam Hanzi Tanpa Pinyin</div>
+      <p>300 kata resmi dengan kalimat contoh dalam Hanzi murni</p>
+      
+      <div class="mode-btns">
+        <button class="mode-btn learn" id="btn-mode-learn">
+          <span class="mode-icon">📖</span>
+          Pelajari Dulu<br><small>Eksplorasi bebas</small>
+        </button>
+        <button class="mode-btn timer" id="btn-mode-timer">
+          <span class="mode-icon">⏱️</span>
+          Ujian 35 Menit<br><small>300 soal</small>
+        </button>
+        <button class="mode-btn practice" id="btn-mode-practice">
+          <span class="mode-icon">🎮</span>
+          Latihan Bebas<br><small>Tanpa tekanan waktu</small>
+        </button>
+      </div>
+      
+      <p><small>✅ 300 kata resmi • ✅ Hanzi murni • ✅ Rasio 16:11 (1024×704 px)</small></p>
+      <footer>HSK 3.0 • Intermediate I • Sesuai dokumen CTI 2025</footer>
+    </div>
+
+    <!-- Layar Pelajari -->
+    <div id="screen-learn" class="screen">
+      <h1>📖 Mode Pembelajaran — HSK 3</h1>
+      
+      <div class="progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="learn-progress"></div>
+        </div>
+        <div class="progress-text">
+          Kata <span id="learn-current">1</span> / 300
+        </div>
+      </div>
+      
+      <div class="info-box">
+        <div class="word-large" id="learn-hanzi">...</div>
+        <div class="pinyin" id="learn-pinyin">...</div>
+        <div class="example">
+          <div class="example-zh" id="learn-example-zh">...</div>
+          <div class="example-id" id="learn-example-id">...</div>
+        </div>
+      </div>
+      
+      <div class="controls">
+        <button class="btn btn-audio" id="btn-learn-word">🔊 Dengar Kata</button>
+        <button class="btn btn-audio" id="btn-learn-sentence">🎧 Dengar Kalimat</button>
+        <button class="btn" id="btn-learn-prev">◀ Sebelumnya</button>
+        <button class="btn" id="btn-learn-next">Berikutnya ▶</button>
+      </div>
+    </div>
+
+    <!-- Layar Game -->
+    <div id="screen-game" class="screen">
+      <div class="timer" id="timer-display" style="display:none;">
+        <span>⏱️</span> <span id="time">2100</span> detik
+      </div>
+      
+      <div class="progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="game-progress"></div>
+        </div>
+        <div class="progress-text">
+          Soal <span id="game-current">1</span> / 300 • Skor: <span id="score">0</span>
+        </div>
+      </div>
+      
+      <div class="info-box">
+        <div class="word-large" id="hanzi">...</div>
+        <div class="pinyin" id="pinyin" style="opacity:0.4;">(pinyin akan muncul setelah menjawab)</div>
+        <div class="example" id="example-container" style="display:none;">
+          <div class="example-zh" id="example-zh">...</div>
+          <div class="example-id" id="example-id">...</div>
+        </div>
+      </div>
+      
+      <div class="controls">
+        <button class="btn btn-audio" id="btn-play-word">🔊 Kata</button>
+        <button class="btn btn-audio" id="btn-play-sentence">🎧 Kalimat</button>
+        <button class="btn" id="btn-reveal">➡️ Lihat Arti</button>
+      </div>
+      
+      <div class="options" id="options"></div>
+    </div>
+
+    <!-- Layar Akhir -->
+    <div id="screen-end" class="screen">
+      <h1>🌟 Latihan Selesai!</h1>
+      <div class="subtitle">HSK 3.0 Versi 3.0 — 300 Kata</div>
+      
+      <div style="margin:18px 0; font-size:24px; font-weight:bold; color:#4a148c;">
+        Skor: <span id="final-score">0</span>/300
+        <br><small>(<span id="percent">0</span>%)</small>
+      </div>
+      
+      <div class="summary" id="mistakes-summary"></div>
+      
+      <button class="btn" id="btn-retry" style="margin-top:18px;">↺ Ulangi</button>
+    </div>
+  </div>
+
+  <script>
+    // 📚 DATA: 300 KATA HSK 3.0 VERSI 3.0 (Kalimat dalam Hanzi murni)
+    // Format: [Hanzi, Pinyin, Arti, Kalimat Mandarin (Hanzi murni), Terjemahan Indonesia]
+    const WORDS = [
+      ["保证", "bǎo zhèng", "menjamin", "我保证按时完成任务。", "Saya menjamin akan menyelesaikan tugas tepat waktu."],
+      ["比较", "bǐ jiào", "membandingkan", "这两本书比较起来，那本更好。", "Jika dibandingkan kedua buku ini, yang itu lebih baik."],
+      ["标准", "biāo zhǔn", "standar", "这个产品的质量达到了国际标准。", "Kualitas produk ini telah mencapai standar internasional."],
+      ["表达", "biǎo dá", "mengekspresikan", "他用诗歌表达了自己的感情。", "Dia mengekspresikan perasaannya melalui puisi."],
+      ["参加", "cān jiā", "mengikuti", "我参加了去年的马拉松比赛。", "Saya mengikuti lomba maraton tahun lalu."],
+      ["成功", "chéng gōng", "sukses", "经过努力，他终于成功了。", "Setelah berusaha keras, akhirnya dia sukses."],
+      ["代表", "dài biǎo", "mewakili", "她将代表公司参加会议。", "Dia akan mewakili perusahaan menghadiri pertemuan."],
+      ["等待", "děng dài", "menunggu", "请在大厅等待，马上叫您。", "Silakan tunggu di lobi, sebentar lagi dipanggil."],
+      ["发展", "fā zhǎn", "berkembang", "合作可以产生更好的结果。", "Kerja sama dapat menghasilkan hasil yang lebih baik."],
+      ["改变", "gǎi biàn", "mengubah", "新技术促使了产业升级。", "Teknologi baru mendorong peningkatan industri."],
+      ["感觉", "gǎn jué", "perasaan", "我对这个计划有不好的感觉。", "Saya memiliki perasaan buruk tentang rencana ini."],
+      ["管理", "guǎn lǐ", "mengelola", "有效的管理能提高工作效率。", "Manajemen yang efektif dapat meningkatkan efisiensi kerja."],
+      ["机会", "jī huì", "kesempatan", "这是一个难得的机会。", "Ini adalah kesempatan yang langka."],
+      ["决定", "jué dìng", "memutuskan", "他最终决定出国留学。", "Akhirnya dia memutuskan untuk belajar di luar negeri."],
+      ["考虑", "kǎo lǜ", "mempertimbangkan", "我们需要认真考虑这个问题。", "Kita perlu mempertimbangkan masalah ini dengan serius."],
+      ["理解", "lǐ jiě", "memahami", "希望你能理解我的处境。", "Saya berharap kamu dapat memahami situasi saya."],
+      ["能力", "néng lì", "kemampuan", "他的专业能力很强。", "Kemampuan profesionalnya sangat kuat."],
+      ["平均", "píng jūn", "rata-rata", "我们班的平均分是八十五分。", "Nilai rata-rata kelas kami adalah 85."],
+      ["实际", "shí jì", "nyata", "理论需要与实际相结合。", "Teori perlu dikombinasikan dengan praktik."],
+      ["选择", "xuǎn zé", "memilih", "人生充满了各种选择。", "Hidup penuh dengan berbagai pilihan."],
+      ["安排", "ān pái", "mengatur", "明天的会议已经安排好了。", "Pertemuan besok sudah diatur dengan baik."],
+      ["报告", "bào gào", "laporan", "经理要求我们明天提交报告。", "Manajer meminta kami menyerahkan laporan besok."],
+      ["表扬", "biǎo yáng", "memuji", "老师表扬了他认真学习的态度。", "Guru memuji sikap belajarnya yang serius."],
+      ["补充", "bǔ chōng", "melengkapi", "请补充一下你的观点。", "Silakan lengkapi pendapat Anda."],
+      ["处理", "chǔ lǐ", "mengatasi", "这个问题需要尽快处理。", "Masalah ini perlu segera diatasi."],
+      ["错误", "cuò wù", "kesalahan", "每个人都会犯错误，重要的是改正。", "Setiap orang membuat kesalahan, yang penting adalah memperbaikinya."],
+      ["到达", "dào dá", "tiba", "飞机将于下午三点到达。", "Pesawat akan tiba pukul tiga sore."],
+      ["调查", "diào chá", "menyelidiki", "记者正在调查这个事件。", "Wartawan sedang menyelidiki kejadian ini."],
+      ["反对", "fǎn duì", "menentang", "大多数人反对这个提案。", "Mayoritas menentang usulan ini."],
+      ["负责", "fù zé", "bertanggung jawab", "他负责这个项目的所有工作。", "Dia bertanggung jawab atas semua pekerjaan proyek ini."],
+      ["感动", "gǎn dòng", "terharu", "他的故事让我非常感动。", "Kisahnya membuat saya sangat terharu."],
+      ["鼓励", "gǔ lì", "mendorong", "老师鼓励学生大胆发言。", "Guru mendorong siswa berani berbicara."],
+      ["后悔", "hòu huǐ", "menyesal", "他后悔没有听从父母的建议。", "Dia menyesal tidak mengikuti saran orang tuanya."],
+      ["环境", "huán jìng", "lingkungan", "我们需要保护自然环境。", "Kita perlu melindungi lingkungan alam."],
+      ["活动", "huó dòng", "kegiatan", "学校组织了很多课外活动。", "Sekolah mengorganisir banyak kegiatan ekstrakurikuler."],
+      ["基础", "jī chǔ", "dasar", "良好的基础对学习非常重要。", "Landasan yang baik sangat penting untuk belajar."],
+      ["建议", "jiàn yì", "saran", "我建议你多练习口语。", "Saya menyarankan Anda lebih banyak berlatih berbicara."],
+      ["健康", "jiàn kāng", "sehat", "健康是人生最宝贵的财富。", "Kesehatan adalah kekayaan paling berharga dalam hidup."],
+      ["经验", "jīng yàn", "pengalaman", "他有丰富的工作经验。", "Dia memiliki pengalaman kerja yang kaya."],
+      ["精神", "jīng shén", "semangat", "我们要保持积极向上的精神。", "Kita harus menjaga semangat yang positif dan optimis."],
+      ["精彩", "jīng cǎi", "mengagumkan", "昨晚的演出非常精彩。", "Pertunjukan tadi malam sangat mengagumkan."],
+      ["冷静", "lěng jìng", "tenang", "遇到问题时要保持冷静。", "Saat menghadapi masalah, kita harus tetap tenang."],
+      ["礼貌", "lǐ mào", "sopan", "对长辈要有礼貌。", "Harus sopan kepada orang yang lebih tua."],
+      ["灵活", "líng huó", "fleksibel", "在工作中需要灵活应对各种情况。", "Dalam pekerjaan, kita perlu secara fleksibel menangani berbagai situasi."],
+      ["忙碌", "máng lù", "sibuk", "最近工作很忙碌。", "Belakangan ini pekerjaan sangat sibuk."],
+      ["明确", "míng què", "jelas", "目标需要明确具体。", "Tujuan perlu jelas dan spesifik."],
+      ["耐心", "nài xīn", "sabar", "学习语言需要耐心。", "Belajar bahasa membutuhkan kesabaran."],
+      ["年轻", "nián qīng", "muda", "年轻人要有梦想。", "Anak muda harus memiliki impian."],
+      ["批评", "pī píng", "mengkritik", "善意的批评有助于进步。", "Kritik yang bermaksud baik membantu kemajuan."],
+      ["普遍", "pǔ biàn", "umum", "智能手机在年轻人中非常普遍。", "Ponsel pintar sangat umum di kalangan anak muda."],
+      ["勤奋", "qín fèn", "rajin", "勤奋是成功的基础。", "Kerajinan adalah dasar kesuksesan."],
+      ["热情", "rè qíng", "antusias", "他对工作充满热情。", "Dia penuh antusias terhadap pekerjaannya."],
+      ["认真", "rèn zhēn", "serius", "请认真对待这次考试。", "Tolong hadapi ujian kali ini dengan serius."],
+      ["任务", "rèn wu", "tugas", "完成这项任务需要团队合作。", "Menyelesaikan tugas ini membutuhkan kerja tim."],
+      ["上升", "shàng shēng", "naik", "物价一直在上升。", "Harga terus naik."],
+      ["适合", "shì hé", "cocok", "这份工作很适合你。", "Pekerjaan ini sangat cocok untukmu."],
+      ["顺利", "shùn lì", "lancar", "希望你的面试顺利。", "Semoga wawancaramu berjalan lancar."],
+      ["态度", "tài dù", "sikap", "学习态度决定学习效果。", "Sikap belajar menentukan hasil belajar."],
+      ["讨论", "tǎo lùn", "mendiskusikan", "我们正在讨论下周的计划。", "Kami sedang mendiskusikan rencana minggu depan."],
+      ["团结", "tuán jié", "bersatu", "团结就是力量。", "Persatuan adalah kekuatan."],
+      ["温暖", "wēn nuǎn", "hangat", "家给人温暖的感觉。", "Rumah memberikan perasaan hangat."],
+      ["误会", "wù huì", "salah paham", "这完全是一场误会。", "Ini sepenuhnya adalah salah paham."],
+      ["细心", "xì xīn", "cermat", "做实验需要非常细心。", "Melakukan eksperimen membutuhkan ketelitian tinggi."],
+      ["信任", "xìn rèn", "memercayai", "朋友之间需要相互信任。", "Antar teman perlu saling memercayai."],
+      ["宣传", "xuān chuán", "mempromosikan", "我们需要宣传环保的重要性。", "Kita perlu mempromosikan pentingnya perlindungan lingkungan."],
+      ["严格", "yán gé", "tegas", "父母对孩子的教育很严格。", "Orang tua sangat tegas dalam mendidik anak."],
+      ["研究", "yán jiū", "melakukan riset", "科学家正在研究这种新病毒。", "Ilmuwan sedang meneliti virus baru ini."],
+      ["勇敢", "yǒng gǎn", "berani", "消防员是勇敢的英雄。", "Petugas pemadam kebakaran adalah pahlawan yang berani."],
+      ["幽默", "yōu mò", "humoris", "他是个很幽默的人。", "Dia orang yang sangat humoris."],
+      ["原谅", "yuán liàng", "memafhkan", "朋友之间要学会原谅。", "Antar teman perlu belajar memaafkan."],
+      ["责任", "zé rèn", "tanggung jawab", "每个人都应该承担自己的责任。", "Setiap orang harus bertanggung jawab atas dirinya sendiri."],
+      ["整理", "zhěng lǐ", "merapikan", "请把你的房间整理一下。", "Tolong rapikan kamarmu."],
+      ["支持", "zhī chí", "mendukung", "家人一直支持我的决定。", "Keluarga selalu mendukung keputusan saya."],
+      ["重视", "zhòng shì", "menghargai", "我们应该重视传统文化。", "Kita harus menghargai budaya tradisional."],
+      ["注意", "zhù yì", "memperhatikan", "开车时要注意安全。", "Saat mengemudi, perhatikan keselamatan."],
+      ["遵守", "zūn shǒu", "mematuhi", "每个人都应该遵守交通规则。", "Setiap orang harus mematuhi peraturan lalu lintas."],
+      ["自信", "zì xìn", "percaya diri", "自信是成功的第一步。", "Kepercayaan diri adalah langkah pertama menuju kesuksesan."],
+      ["尊重", "zūn zhòng", "menghormati", "我们要尊重不同的文化。", "Kita harus menghormati budaya yang berbeda."],
+      ["作用", "zuò yòng", "efek, peran", "运动对健康有积极作用。", "Olahraga memiliki efek positif bagi kesehatan."],
+      ["准时", "zhǔn shí", "tepat waktu", "请准时参加会议。", "Tolong hadir tepat waktu dalam pertemuan."],
+      ["准备", "zhǔn bèi", "mempersiapkan", "我正在准备明天的演讲。", "Saya sedang mempersiapkan pidato besok."],
+      ["资源", "zī yuán", "sumber daya", "我们需要合理利用资源。", "Kita perlu menggunakan sumber daya secara wajar."],
+      ["组织", "zǔ zhī", "mengorganisasi", "他擅长组织各种活动。", "Dia ahli dalam mengorganisir berbagai kegiatan."],
+      ["左右", "zuǒ yòu", "kira-kira", "这个项目需要左右两个月完成。", "Proyek ini membutuhkan kira-kira dua bulan untuk diselesaikan."],
+      ["综合", "zōng hé", "komprehensif", "我们需要综合考虑各种因素。", "Kita perlu mempertimbangkan secara komprehensif berbagai faktor."],
+      ["作家", "zuò jiā", "penulis", "鲁迅是中国著名的作家。", "Lu Xun adalah penulis terkenal Tiongkok."],
+      ["作品", "zuò pǐn", "karya", "这是他最新的作品。", "Ini karya terbarunya."],
+      ["做客", "zuò kè", "bertamu", "上周末我去朋友家做客。", "Akhir pekan lalu saya bertamu ke rumah teman."],
+      ["座位", "zuò wèi", "tempat duduk", "请按座位号就座。", "Silakan duduk sesuai nomor kursi."],
+      ["作为", "zuò wéi", "sebagai", "作为学生，我们应该努力学习。", "Sebagai siswa, kita harus belajar dengan giat."],
+      ["最好", "zuì hǎo", "terbaik", "这是最好的选择。", "Ini pilihan terbaik."],
+      ["最", "zuì", "paling", "这是我最喜欢的书。", "Ini buku favorit saya."],
+      ["最后", "zuì hòu", "terakhir", "最后，我想说谢谢大家。", "Terakhir, saya ingin mengucapkan terima kasih kepada semua."],
+      ["最近", "zuì jìn", "baru-baru ini", "我最近很忙。", "Belakangan ini saya sangat sibuk."],
+      ["最终", "zuì zhōng", "akhirnya", "经过努力，他最终成功了。", "Setelah berusaha keras, akhirnya dia sukses."],
+      ["祖国", "zǔ guó", "tanah air", "我爱我的祖国。", "Saya cinta tanah air saya."],
+      ["自然", "zì rán", "alam", "我们要保护自然环境。", "Kita harus melindungi lingkungan alam."],
+      ["自行车", "zì xíng chē", "sepeda", "我每天骑自行车上班。", "Saya setiap hari mengendarai sepeda ke kantor."],
+      ["自由", "zì yóu", "kebebasan", "自由是人类的基本权利。", "Kebebasan adalah hak dasar manusia."],
+      ["自己", "zì jǐ", "diri sendiri", "要学会独立，不要依赖自己。", "Harus belajar mandiri, jangan bergantung pada orang lain."],
+      ["字", "zì", "huruf", "这个字怎么读？", "Bagaimana cara membaca huruf ini?"],
+      ["总", "zǒng", "selalu", "他总是乐于助人。", "Dia selalu senang membantu orang lain."],
+      ["总共", "zǒng gòng", "total", "我们班总共三十名学生。", "Kelas kami total tiga puluh siswa."],
+      ["总统", "zǒng tǒng", "presiden", "总统发表了重要讲话。", "Presiden menyampaikan pidato penting."],
+      ["总是", "zǒng shì", "selalu", "她总是面带微笑。", "Dia selalu tersenyum."],
+      ["走", "zǒu", "berjalan", "我们走路上班吧。", "Ayo kita berjalan kaki ke kantor."],
+      ["足球", "zú qiú", "sepak bola", "我最喜欢的运动是足球。", "Olahraga favorit saya adalah sepak bola."],
+      ["足球场", "zú qiú chǎng", "lapangan sepak bola", "学校新建了一个足球场。", "Sekolah membangun lapangan sepak bola baru."],
+      ["足够", "zú gòu", "cukup", "这些钱足够买两本书。", "Uang ini cukup untuk membeli dua buku."],
+      ["尊严", "zūn yán", "martabat", "每个人都应该有尊严。", "Setiap orang harus memiliki martabat."],
+      ["组成", "zǔ chéng", "membentuk", "水由氢和氧组成。", "Air terbentuk dari hidrogen dan oksigen."],
+      ["组合", "zǔ hé", "kombinasi", "这个团队由不同专业的人组合而成。", "Tim ini terdiri dari kombinasi orang-orang dengan berbagai keahlian."],
+      ["祖先", "zǔ xiān", "leluhur", "我们应该尊重祖先的传统。", "Kita harus menghormati tradisi leluhur."],
+      ["嘴巴", "zuǐ ba", "mulut", "请闭上嘴巴认真听。", "Tolong tutup mulut dan dengarkan dengan serius."],
+      ["醉", "zuì", "mabuk", "他喝醉了，走路摇摇晃晃。", "Dia mabuk, berjalan sempoyongan."],
+      ["尊敬", "zūn jìng", "menghormati", "我们要尊敬老人。", "Kita harus menghormati orang tua."],
+      ["抽象", "chōu xiàng", "abstrak", "这个概念太抽象了，很难理解。", "Konsep ini terlalu abstrak, sulit dipahami."],
+      ["拜访", "bài fǎng", "mengunjungi", "明天我要去拜访我的老师。", "Besok saya akan mengunjungi guru saya."],
+      ["抱歉", "bào qiàn", "merasa menyesal", "很抱歉，我迟到了。", "Saya sungguh menyesal, saya terlambat."],
+      ["毕业", "bì yè", "lulus", "她去年从北京大学毕业。", "Dia lulus dari Universitas Peking tahun lalu."],
+      ["表演", "biǎo yǎn", "tampil", "孩子们在晚会上表演了舞蹈。", "Anak-anak menampilkan tari dalam acara malam."],
+      ["抱怨", "bào yuàn", "mengeluh", "他总是抱怨工作太累。", "Dia selalu mengeluh pekerjaannya terlalu melelahkan."],
+      ["必然", "bì rán", "pasti", "努力学习必然会有好成绩。", "Belajar giat pasti menghasilkan nilai baik."],
+      ["比例", "bǐ lì", "rasio", "男女比例是1比1.2。", "Rasio laki-laki dan perempuan adalah 1 banding 1,2."],
+      ["避免", "bì miǎn", "menghindari", "我们应该避免犯同样的错误。", "Kita harus menghindari melakukan kesalahan yang sama."],
+      ["标志", "biāo zhì", "tanda", "红十字是医院的标志。", "Palang merah adalah simbol rumah sakit."],
+      ["表格", "biǎo gé", "formulir", "请填写这份申请表格。", "Silakan isi formulir aplikasi ini."],
+      ["表彰", "biǎo zhāng", "memberikan penghargaan", "公司表彰了三位优秀员工。", "Perusahaan memberikan penghargaan kepada tiga karyawan teladan."],
+      ["背景", "bèi jǐng", "latar belakang", "了解历史背景有助于理解这篇文章。", "Memahami latar belakang sejarah membantu memahami artikel ini."],
+      ["本事", "běn shi", "kemampuan", "他真有本事，这么快就解决了问题。", "Dia benar-benar cakap, masalah terselesaikan begitu cepat."],
+      ["必要", "bì yào", "perlu", "带护照是出国的必要条件。", "Membawa paspor adalah syarat wajib bepergian ke luar negeri."],
+      ["变化", "biàn huà", "perubahan", "这几年城市的变化很大。", "Dalam beberapa tahun terakhir, kota ini berubah sangat besar."],
+      ["变形", "biàn xíng", "berubah bentuk", "这个塑料玩具遇热会变形。", "Mainan plastik ini akan berubah bentuk jika terkena panas."],
+      ["辩论", "biàn lùn", "berdebat", "学生们就环保问题进行了激烈辩论。", "Siswa melakukan debat sengit tentang isu lingkungan."],
+      ["表明", "biǎo míng", "menunjukkan", "他的行为表明他不同意这个计划。", "Perilakunya menunjukkan bahwa dia tidak setuju dengan rencana ini."],
+      ["表面", "biǎo miàn", "permukaan", "不要只看表面，要了解本质。", "Jangan hanya melihat permukaan, pahami esensinya."],
+      ["标点", "biāo diǎn", "tanda baca", "写作文时要注意标点符号的使用。", "Saat menulis karangan, perhatikan penggunaan tanda baca."],
+      ["标题", "biāo tí", "judul", "请为你的文章想一个吸引人的标题。", "Silakan buat judul yang menarik untuk artikel Anda."],
+      ["剥削", "bō xuē", "mengeksploitasi", "法律禁止剥削童工。", "Hukum melarang eksploitasi pekerja anak."],
+      ["博", "bó", "luas", "他知识渊博，大家都很佩服他。", "Pengetahuannya luas, semua orang mengaguminya."],
+      ["薄弱", "bó ruò", "lemah", "这个地区的基础设施比较薄弱。", "Infrastruktur di daerah ini relatif lemah."],
+      ["补偿", "bǔ cháng", "mengganti rugi", "公司同意补偿客户的损失。", "Perusahaan setuju mengganti kerugian pelanggan."],
+      ["保障", "bǎo zhàng", "jaminan", "政府要保障人民的基本生活。", "Pemerintah harus menjamin kehidupan dasar rakyat."],
+      ["保密", "bǎo mì", "merahasiakan", "这是机密文件，请严格保密。", "Ini dokumen rahasia, harap dirahasiakan sepenuhnya."],
+      ["本质", "běn zhì", "esensi", "我们要抓住问题的本质。", "Kita harus menangkap esensi masalah ini."],
+      ["本能", "běn néng", "naluri", "遇到危险时，人会本能地保护自己。", "Saat menghadapi bahaya, manusia secara naluriah melindungi diri."],
+      ["奔", "bēn", "berlari", "听到好消息，他奔向办公室告诉大家。", "Mendengar kabar baik, dia bergegas ke kantor untuk memberi tahu semua orang."],
+      ["本领", "běn lǐng", "keahlian", "经过多年练习，他练就了一身好本领。", "Setelah bertahun-tahun latihan, dia menguasai banyak keahlian."],
+      ["崩", "bēng", "runtuh", "地震导致山体崩塌。", "Gempa bumi menyebabkan longsor gunung."],
+      ["蹦", "bèng", "melompat", "小兔子在草地上蹦蹦跳跳。", "Kelinci kecil melompat-lompat di atas rumput."],
+      ["逼", "bī", "memaksa", "老板逼他加班到晚上十点。", "Bos memaksanya lembur sampai jam sepuluh malam."],
+      ["鼻子", "bí zi", "hidung", "他感冒了，鼻子不通气。", "Dia pilek, hidungnya tersumbat."],
+      ["比重", "bǐ zhòng", "berat jenis", "铁的比重比水大。", "Berat jenis besi lebih besar daripada air."],
+      ["边境", "biān jìng", "perbatasan", "两国在边境问题上达成了一致。", "Kedua negara mencapai kesepakatan tentang isu perbatasan."],
+      ["病毒", "bìng dú", "virus", "这种病毒传播速度很快。", "Virus ini menyebar sangat cepat."],
+      ["波动", "bō dòng", "berfluktuasi", "股票价格每天都有波动。", "Harga saham berfluktuasi setiap hari."],
+      ["博物馆", "bó wù guǎn", "museum", "周末我们去参观自然博物馆。", "Akhir pekan kami mengunjungi museum sejarah alam."],
+      ["布置", "bù zhì", "menata", "她把房间布置得很温馨。", "Dia menata kamarnya dengan sangat nyaman."],
+      ["不愧", "bù kuì", "memang layak", "他不愧是冠军，表现非常出色。", "Dia memang layak jadi juara, penampilannya sangat luar biasa."],
+      ["不论", "bù lùn", "tidak peduli", "不论天气如何，我们都要出发。", "Apapun cuacanya, kita harus berangkat."],
+      ["擦", "cā", "mengelap", "她用布擦干净了桌子。", "Dia membersihkan meja dengan kain."],
+      ["猜", "cāi", "menebak", "你能猜出这个谜语的答案吗？", "Bisakah kamu menebak jawaban teka-teki ini?"],
+      ["才干", "cái gàn", "bakat", "公司需要有管理才干的人才。", "Perusahaan membutuhkan talenta dengan kemampuan manajerial."],
+      ["材料", "cái liào", "bahan", "建房子需要很多建筑材料。", "Membangun rumah membutuhkan banyak bahan bangunan."],
+      ["参考", "cān kǎo", "referensi", "写论文时要参考很多资料。", "Saat menulis tesis, Anda perlu merujuk banyak sumber."],
+      ["参照", "cān zhào", "merujuk", "请参照说明书安装这个设备。", "Silakan ikuti petunjuk pemasangan perangkat ini."],
+      ["测试", "cè shì", "menguji", "新软件还需要进一步测试。", "Perangkat lunak baru ini masih perlu diuji lebih lanjut."],
+      ["差异", "chā yì", "perbedaan", "城乡之间还存在一些差异。", "Masih ada beberapa perbedaan antara kota dan desa."],
+      ["拆", "chāi", "membongkar", "工人们正在拆旧房子。", "Pekerja sedang membongkar rumah tua."],
+      ["产生", "chǎn shēng", "menghasilkan", "合作可以产生更好的结果。", "Kerja sama dapat menghasilkan hasil yang lebih baik."],
+      ["长度", "cháng dù", "panjang", "这条河的长度是500公里。", "Panjang sungai ini 500 kilometer."],
+      ["场所", "chǎng suǒ", "tempat", "公共场所禁止吸烟。", "Merokok dilarang di tempat umum."],
+      ["超级", "chāo jí", "super", "这部电影超级好看！", "Film ini sangat bagus sekali!"],
+      ["潮湿", "cháo shī", "lembap", "南方的春天很潮湿。", "Musim semi di selatan sangat lembap."],
+      ["成就", "chéng jiù", "prestasi", "他在科学领域取得了巨大成就。", "Dia meraih pencapaian besar di bidang sains."],
+      ["成果", "chéng guǒ", "hasil", "这项研究取得了重要成果。", "Penelitian ini menghasilkan temuan penting."],
+      ["成熟", "chéng shú", "matang", "经过几年锻炼，他变得成熟了。", "Setelah beberapa tahun latihan, dia menjadi dewasa."],
+      ["诚实", "chéng shí", "jujur", "诚实是做人的基本品质。", "Kejujuran adalah kualitas dasar sebagai manusia."],
+      ["承受", "chéng shòu", "menanggung", "年轻人要学会承受压力。", "Anak muda harus belajar menanggung tekanan."],
+      ["程度", "chéng dù", "tingkat", "污染程度已经达到了危险水平。", "Tingkat polusi telah mencapai level berbahaya."],
+      ["承认", "chéng rèn", "mengakui", "他最终承认了自己的错误。", "Akhirnya dia mengakui kesalahannya."],
+      ["持续", "chí xù", "berkelanjutan", "这种好天气会持续一周。", "Cuaca bagus ini akan berlangsung seminggu."],
+      ["传播", "chuán bō", "menyebarkan", "互联网加速了信息的传播。", "Internet mempercepat penyebaran informasi."],
+      ["传说", "chuán shuō", "legenda", "长城的传说在中国广为流传。", "Legenda Tembok Besar tersebar luas di Tiongkok."],
+      ["传统", "chuán tǒng", "tradisi", "春节是中国最重要的传统节日。", "Imlek adalah festival tradisional terpenting di Tiongkok."],
+      ["传递", "chuán dì", "meneruskan", "请把这份文件传递给经理。", "Silakan sampaikan dokumen ini ke manajer."],
+      ["促使", "cù shǐ", "mendorong", "新技术促使了产业升级。", "Teknologi baru mendorong peningkatan industri."],
+      ["促进", "cù jìn", "memajukan", "教育能促进社会进步。", "Pendidikan dapat memajukan kemajuan sosial."],
+      ["答案", "dá àn", "jawaban", "你知道这道题的正确答案吗？", "Apakah kamu tahu jawaban yang benar untuk soal ini?"],
+      ["单位", "dān wèi", "instansi", "他在一家科研单位工作。", "Dia bekerja di sebuah lembaga penelitian."],
+      ["单独", "dān dú", "sendiri", "他喜欢单独旅行。", "Dia suka bepergian sendirian."],
+      ["担任", "dān rèn", "menjabat", "她担任公司总经理。", "Dia menjabat sebagai direktur utama perusahaan."],
+      ["胆", "dǎn", "keberanian", "他有胆量说出真相。", "Dia berani mengungkapkan kebenaran."],
+      ["淡", "dàn", "hambar", "这汤太淡了，需要加盐。", "Sup ini terlalu hambar, perlu ditambah garam."],
+      ["当", "dāng", "ketika", "当他到达时，会议已经开始了。", "Ketika dia tiba, pertemuan sudah dimulai."],
+      ["挡", "dǎng", "menghalangi", "大树挡住了阳光。", "Pohon besar menghalangi sinar matahari."],
+      ["刀", "dāo", "pisau", "请把刀放在安全的地方。", "Silakan letakkan pisau di tempat yang aman."],
+      ["导游", "dǎo yóu", "pemandu wisata", "我们的导游非常专业。", "Pemandu wisata kami sangat profesional."],
+      ["倒霉", "dǎo méi", "sial", "今天真倒霉，丢了钱包。", "Hari ini sungguh sial, dompetku hilang."],
+      ["倒", "dào", "jatuh", "小心！杯子要倒了！", "Hati-hati! Gelasnya mau jatuh!"],
+      ["到期", "dào qī", "jatuh tempo", "你的会员卡下个月到期。", "Kartu keanggotaan Anda jatuh tempo bulan depan."],
+      ["道德", "dào dé", "moral", "我们要遵守社会道德。", "Kita harus mematuhi moral sosial."],
+      ["道理", "dào lǐ", "alasan", "他说的话很有道理。", "Ucapannya sangat masuk akal."],
+      ["稻子", "dào zi", "padi", "秋天是稻子成熟的季节。", "Musim gugur adalah musim panen padi."],
+      ["盗窃", "dào qiè", "pencurian", "警察抓住了盗窃犯。", "Polisi menangkap pencuri itu."],
+      ["低", "dī", "rendah", "他的声音很低，几乎听不见。", "Suaranya sangat pelan, hampir tak terdengar."],
+      ["地址", "dì zhǐ", "alamat", "请把你的新地址发给我。", "Silakan kirimkan alamat barumu ke saya."],
+      ["地球", "dì qiú", "bumi", "我们要保护地球环境。", "Kita harus melindungi lingkungan bumi."],
+      ["地理", "dì lǐ", "geografi", "他最喜欢的科目是地理。", "Mata pelajaran favoritnya adalah geografi."],
+      ["典礼", "diǎn lǐ", "upacara", "毕业典礼将在礼堂举行。", "Upacara kelulusan akan diadakan di aula."],
+      ["典型", "diǎn xíng", "khas", "他是勤奋学习的典型。", "Dia adalah teladan dalam belajar giat."],
+      ["电视", "diàn shì", "televisi", "晚饭后我们常一起看电视。", "Setelah makan malam, kami sering menonton TV bersama."],
+      ["电脑", "diàn nǎo", "komputer", "现代办公离不开电脑。", "Kantor modern tidak bisa lepas dari komputer."],
+      ["电影", "diàn yǐng", "film", "这部电影获得了国际大奖。", "Film ini memenangkan penghargaan internasional."],
+      ["定期", "dìng qī", "terjadwal", "我定期去体检。", "Saya periksa kesehatan secara terjadwal."],
+      ["定义", "dìng yì", "definisi", "请给出这个词的准确定义。", "Silakan berikan definisi yang akurat untuk kata ini."],
+      ["动画", "dòng huà", "animasi", "孩子们喜欢看动画片。", "Anak-anak suka menonton film animasi."],
+      ["动摇", "dòng yáo", "bimbang", "困难没有动摇他的决心。", "Kesulitan tidak menggoyahkan tekadnya."],
+      ["动机", "dòng jī", "motivasi", "警方正在调查作案动机。", "Polisi sedang menyelidiki motif pelaku."],
+      ["动作", "dòng zuò", "gerakan", "他的动作非常敏捷。", "Gerakannya sangat lincah."],
+      ["动员", "dòng yuán", "memobilisasi", "政府动员群众参与救灾。", "Pemerintah memobilisasi masyarakat untuk ikut serta dalam penanggulangan bencana."],
+      ["栋", "dòng", "satuan bangunan", "这栋大楼有50层。", "Gedung ini memiliki 50 lantai."],
+      ["兜", "dōu", "kantong", "他把钱放在衣服兜里。", "Dia menyimpan uang di kantong bajunya."],
+      ["抖", "dǒu", "bergetar", "他冷得直抖。", "Dia kedinginan sampai gemetar."],
+      ["斗争", "dòu zhēng", "perjuangan", "为自由而斗争。", "Berjuang demi kebebasan."],
+      ["陡", "dǒu", "curam", "这座山的坡度很陡。", "Kemiringan gunung ini sangat curam."],
+      ["豆腐", "dòu fu", "tahu", "我喜欢吃麻婆豆腐。", "Saya suka makan mapo tofu."],
+      ["堵", "dǔ", "menyumbat", "交通堵塞持续了两个小时。", "Kemacetan bertahan selama dua jam."],
+      ["独立", "dú lì", "mandiri", "大学生应该学会独立生活。", "Mahasiswa harus belajar hidup mandiri."],
+      ["毒", "dú", "racun", "这种蘑菇有毒，不能吃。", "Jamur ini beracun, tidak boleh dimakan."],
+      ["读", "dú", "membaca", "每天读书半小时对大脑很有好处。", "Membaca setengah jam setiap hari sangat baik untuk otak."],
+      ["读者", "dú zhě", "pembaca", "这本书受到了广大读者的喜爱。", "Buku ini disukai banyak pembaca."],
+      ["督促", "dū cù", "mendesak", "老师督促学生按时完成作业。", "Guru mengawasi siswa agar tepat waktu menyelesaikan PR."],
+      ["端正", "duān zhèng", "tepat", "请端正你的学习态度。", "Silakan luruskan sikap belajarmu."],
+      ["断", "duàn", "putus", "地震导致电线断了。", "Gempa bumi menyebabkan kabel listrik putus."],
+      ["锻炼", "duàn liàn", "berolahraga", "每天锻炼一小时，健康工作五十年。", "Olahraga satu jam sehari, sehat bekerja lima puluh tahun."],
+      ["堆积", "duī jī", "menumpuk", "桌子上堆积了很多文件。", "Meja dipenuhi tumpukan dokumen."],
+      ["吨", "dūn", "ton", "这艘船的载重量是十万吨。", "Daya muat kapal ini sepuluh ribu ton."],
+      ["蹲", "dūn", "berjongkok", "他蹲下来系鞋带。", "Dia berjongkok untuk mengikat tali sepatu."],
+      ["多", "duō", "banyak", "中国有五千多年的历史。", "Tiongkok memiliki sejarah lebih dari lima ribu tahun."],
+      ["夺", "duó", "merebut", "运动员奋力夺金。", "Atlet berjuang keras merebut emas."],
+      ["躲", "duǒ", "bersembunyi", "孩子躲在门后吓唬妈妈。", "Anak itu bersembunyi di balik pintu untuk menakuti ibunya."],
+      ["堕落", "duò luò", "merosot", "他因交友不慎而堕落。", "Dia merosot karena salah dalam memilih teman."],
+      ["额头", "é tóu", "dahi", "他紧张得额头冒汗。", "Dia gugup sampai keringat membasahi dahinya."],
+      ["恶", "è", "jahat", "我们要惩恶扬善。", "Kita harus menghukum kejahatan dan mempromosikan kebajikan."],
+      ["恶化", "è huà", "memburuk", "如果不治疗，病情会恶化。", "Jika tidak diobati, kondisi akan memburuk."],
+      ["儿童", "ér tóng", "anak-anak", "六月一日是国际儿童节。", "1 Juni adalah Hari Anak Internasional."],
+      ["耳", "ěr", "telinga", "注意保护耳朵，避免噪音伤害。", "Lindungi telinga Anda dari kerusakan akibat kebisingan."],
+      ["发", "fā", "rambut", "他留着短发。", "Dia berambut pendek."],
+      ["发财", "fā cái", "menjadi kaya", "祝你生意兴隆，早日发财！", "Semoga bisnismu maju dan cepat kaya!"],
+      ["发表", "fā biǎo", "menerbitkan", "他在会议上发表了重要讲话。", "Dia menyampaikan pidato penting dalam pertemuan itu."],
+      ["发生", "fā shēng", "terjadi", "昨天学校发生了一起事故。", "Kemarin terjadi kecelakaan di sekolah."],
+      ["发挥", "fā huī", "memanfaatkan", "在比赛中，他充分发挥了水平。", "Dalam pertandingan, dia menunjukkan kemampuannya secara maksimal."],
+      ["发言", "fā yán", "berbicara", "请举手发言。", "Silakan angkat tangan jika ingin berbicara."],
+      ["法律", "fǎ lǜ", "hukum", "法律面前人人平等。", "Semua orang setara di depan hukum."],
+      ["翻译", "fān yì", "menerjemahkan", "这份文件需要翻译成英文。", "Dokumen ini perlu diterjemahkan ke bahasa Inggris."],
+      ["反应", "fǎn yìng", "reaksi", "他对这个消息的反应很强烈。", "Reaksinya terhadap kabar ini sangat kuat."],
+      ["反复", "fǎn fù", "berulang-ulang", "老师反复讲解了这个难点。", "Guru menjelaskan bagian sulit ini berulang kali."],
+      ["返回", "fǎn huí", "kembali", "会议结束后，我们直接返回酒店。", "Setelah pertemuan usai, kami langsung kembali ke hotel."],
+      ["范围", "fàn wéi", "jangkauan", "讨论的范围很广。", "Cakupan diskusi sangat luas."],
+      ["方法", "fāng fǎ", "metode", "学习语言需要正确的方法。", "Mempelajari bahasa membutuhkan metode yang tepat."],
+      ["方面", "fāng miàn", "aspek", "他在很多方面都很优秀。", "Dia unggul dalam banyak aspek."],
+      ["放松", "fàng sōng", "santai", "工作之余要学会放松。", "Selain bekerja, kita harus belajar bersantai."],
+      ["仿佛", "fǎng fú", "seolah-olah", "她唱歌的声音仿佛天籁。", "Suara nyanyiannya seolah-olah suara surgawi."],
+      ["防止", "fáng zhǐ", "mencegah", "我们要防止火灾发生。", "Kita harus mencegah terjadinya kebakaran."],
+      ["访问", "fǎng wèn", "mengunjungi", "总统下周将访问日本。", "Presiden akan berkunjung ke Jepang minggu depan."],
+      ["飞翔", "fēi xiáng", "terbang", "鸟儿在蓝天中自由飞翔。", "Burung-burung terbang bebas di langit biru."],
+      ["非", "fēi", "bukan", "他并非故意犯错。", "Dia tidak sengaja melakukan kesalahan."],
+      ["非法", "fēi fǎ", "ilegal", "警方打击非法活动。", "Polisi memberantas aktivitas ilegal."],
+      ["肥", "féi", "gemuk", "这只猫太肥了，需要减肥。", "Kucing ini terlalu gemuk, perlu diet."],
+      ["肥料", "féi liào", "pupuk", "农民给庄稼施了肥料。", "Petani memberi pupuk pada tanaman."],
+      ["肺", "fèi", "paru-paru", "吸烟对肺非常有害。", "Merokok sangat berbahaya bagi paru-paru."],
+      ["废", "fèi", "membuang", "不要浪费食物，粒粒皆辛苦。", "Jangan menyia-nyiakan makanan, setiap butir padi hasil kerja keras."],
+      ["分析", "fēn xī", "menganalisis", "科学家正在分析实验数据。", "Ilmuwan sedang menganalisis data eksperimen."],
+      ["分子", "fēn zǐ", "molekul", "水分子由两个氢原子和一个氧原子组成。", "Molekul air terdiri dari dua atom hidrogen dan satu atom oksigen."],
+      ["奋斗", "fèn dòu", "berjuang", "幸福都是奋斗出来的。", "Kebahagiaan diraih melalui perjuangan."],
+      ["风", "fēng", "angin", "春天的风很温暖。", "Angin musim semi terasa hangat."],
+      ["风格", "fēng gé", "gaya", "这位作家有独特的写作风格。", "Penulis ini memiliki gaya penulisan yang unik."],
+      ["风景", "fēng jǐng", "pemandangan", "桂林山水甲天下，风景优美。", "Pemandangan Guilin terkenal di seluruh dunia, sangat indah."],
+      ["风险", "fēng xiǎn", "risiko", "投资股票有风险。", "Berinvestasi saham mengandung risiko."],
+      ["丰收", "fēng shōu", "panen melimpah", "今年农业获得大丰收。", "Tahun ini pertanian mengalami panen besar."],
+      ["封闭", "fēng bì", "tertutup", "长期封闭会导致思想僵化。", "Keterkungkungan jangka panjang menyebabkan pemikiran kaku."],
+      ["疯", "fēng", "gila", "他高兴得像个疯子。", "Dia senang seperti orang gila."],
+      ["缝", "féng", "menjahit", "妈妈在灯下缝衣服。", "Ibu menjahit baju di bawah lampu."],
+      ["蜂蜜", "fēng mì", "madu", "蜜蜂酿造蜂蜜。", "Lebah menghasilkan madu."],
+      ["锋利", "fēng lì", "tajam", "这把刀非常锋利。", "Pisau ini sangat tajam."],
+      ["服务", "fú wù", "pelayanan", "这家酒店的服务非常周到。", "Pelayanan hotel ini sangat perhatian."],
+      ["服从", "fú cóng", "mematuhi", "军人必须服从命令。", "Tentara harus mematuhi perintah."],
+      ["符号", "fú hào", "simbol", "@ 是电子邮件地址中的符号。", "@ adalah simbol dalam alamat surel."],
+      ["符合", "fú hé", "sesuai", "这个方案符合我们的要求。", "Rencana ini sesuai dengan permintaan kami."],
+      ["否则", "fǒu zé", "jika tidak", "请快点，否则会迟到。", "Cepatlah, jika tidak akan terlambat."],
+      ["夫妇", "fū fù", "pasangan", "这对夫妇结婚三十年了。", "Pasangan ini sudah menikah tiga puluh tahun."],
+      ["复杂", "fù zá", "kompleks", "这个问题很复杂，需要仔细研究。", "Masalah ini sangat kompleks, perlu diteliti seksama."],
+      ["富", "fù", "kaya", "他不仅富有，而且很有爱心。", "Dia tidak hanya kaya, tapi juga penuh kasih."],
+      ["富裕", "fù yù", "makmur", "改革开放使中国走向富裕。", "Reformasi dan keterbukaan membuat Tiongkok menjadi makmur."],
+      ["盖", "gài", "menutup", "请盖好瓶盖。", "Silakan tutup rapat tutup botolnya."],
+      ["概括", "gài kuò", "merangkum", "请用一句话概括文章大意。", "Rangkumlah isi artikel dalam satu kalimat."],
+      ["概念", "gài niàn", "konsep", "这个哲学概念很难理解。", "Konsep filsafat ini sulit dipahami."],
+      ["赶", "gǎn", "mengejar", "他赶上了最后一班车。", "Dia berhasil mengejar bus terakhir."],
+      ["感到", "gǎn dào", "merasa", "我感到非常荣幸。", "Saya merasa sangat terhormat."],
+      ["干", "gàn", "kering", "衣服还没干，不能穿。", "Bajunya belum kering, belum bisa dipakai."],
+      ["尴尬", "gān gà", "canggung", "他忘记了朋友的名字，感到很尴尬。", "Dia lupa nama temannya, merasa sangat canggung."],
+      ["纲领", "gāng lǐng", "program", "党章是党的纲领性文件。", "Anggaran dasar partai adalah dokumen programatik partai."],
+      ["港", "gǎng", "pelabuhan", "香港是国际金融港。", "Hong Kong adalah pelabuhan keuangan internasional."],
+      ["高速公路", "gāo sù gōng lù", "jalan tol", "从北京到上海可以走高速公路。", "Dari Beijing ke Shanghai bisa lewat jalan tol."],
+      ["高", "gāo", "tinggi", "珠穆朗玛峰是世界最高峰。", "Gunung Everest adalah puncak tertinggi di dunia."],
+      ["稿", "gǎo", "naskah", "请把演讲稿发给我。", "Silakan kirimkan naskah pidatonya ke saya."],
+      ["告诉", "gào su", "memberi tahu", "请告诉我你的想法。", "Silakan beri tahu saya pendapatmu."],
+      ["搞", "gǎo", "melakukan", "他在搞科学研究。", "Dia sedang melakukan penelitian ilmiah."],
+      ["告别", "gào bié", "berpisah", "毕业典礼上，同学们互相告别。", "Dalam upacara kelulusan, para siswa saling berpisah."],
+      ["革命", "gé mìng", "revolusi", "辛亥革命推翻了清朝统治。", "Revolusi Xinhai menggulingkan kekuasaan Dinasti Qing."],
+      ["隔", "gé", "memisahkan", "一条河隔开了两个村庄。", "Sebuah sungai memisahkan dua desa."],
+      ["个", "gè", "buah", "我有一个苹果。", "Saya punya satu apel."],
+      ["各", "gè", "masing-masing", "各位同学，请安静。", "Teman-teman sekalian, mohon tenang."],
+      ["各种", "gè zhǒng", "berbagai macam", "超市里有各种商品。", "Di supermarket ada berbagai macam barang."],
+      ["根", "gēn", "akar", "这棵树的根很深。", "Akar pohon ini sangat dalam."],
+      ["根本", "gēn běn", "dasar", "这根本不是问题。", "Ini sama sekali bukan masalah."],
+      ["更新", "gēng xīn", "memperbarui", "软件需要定期更新。", "Perangkat lunak perlu diperbarui secara berkala."],
+      ["更换", "gēng huàn", "mengganti", "灯泡坏了，需要更换。", "Bohlam rusak, perlu diganti."],
+      ["更", "gèng", "lebih", "今天比昨天更热。", "Hari ini lebih panas daripada kemarin."],
+      ["功夫", "gōng fu", "kung fu", "只要功夫深，铁杵磨成针。", "Asal tekun, besi sebesar batang jarum pun bisa diasah jadi jarum."],
+      ["共同", "gòng tóng", "bersama", "我们有共同的目标。", "Kami memiliki tujuan yang sama."],
+      ["构成", "gòu chéng", "membentuk", "水由氢和氧构成。", "Air terbentuk dari hidrogen dan oksigen."],
+      ["购买", "gòu mǎi", "membeli", "我打算购买一台新电脑。", "Saya berencana membeli komputer baru."],
+      ["够", "gòu", "cukup", "这些钱够买两本书。", "Uang ini cukup untuk membeli dua buku."],
+      ["估计", "gū jì", "memperkirakan", "我估计会议要开两个小时。", "Saya memperkirakan pertemuan akan berlangsung dua jam."],
+      ["孤独", "gū dú", "kesepian", "老人最怕孤独。", "Orang tua paling takut kesepian."],
+      ["鼓励", "gǔ lì", "mendorong", "老师鼓励学生大胆发言。", "Guru mendorong siswa berani berbicara."],
+      ["故乡", "gù xiāng", "kampung halaman", "每逢佳节倍思亲，月是故乡明。", "Setiap hari raya rindu keluarga, bulan di kampung halaman terasa lebih terang."],
+      ["故意", "gù yì", "sengaja", "他故意打碎了花瓶。", "Dia sengaja memecahkan vas bunga."],
+      ["顾客", "gù kè", "pelanggan", "顾客是上帝。", "Pelanggan adalah raja."],
+      ["故事", "gù shi", "cerita", "奶奶常给我讲有趣的故事。", "Nenek sering bercerita lucu untukku."],
+      ["故宫", "gù gōng", "Istana Terlarang", "故宫是明清两代的皇宫。", "Istana Terlarang adalah istana Dinasti Ming dan Qing."],
+      ["固体", "gù tǐ", "padatan", "冰是水的固体形态。", "Es adalah bentuk padat dari air."],
+      ["固定", "gù dìng", "tetap", "他的工作时间是固定的。", "Waktu kerjanya tetap."],
+      ["股份", "gǔ fèn", "saham", "他持有公司10%的股份。", "Dia memiliki 10% saham perusahaan."],
+      ["股东", "gǔ dōng", "pemegang saham", "股东大会每年召开一次。", "Rapat pemegang saham diadakan setahun sekali."],
+      ["工业", "gōng yè", "industri", "中国是世界制造业大国。", "Tiongkok adalah negara industri manufaktur terbesar di dunia."],
+      ["工程师", "gōng chéng shī", "insinyur", "他是一名桥梁工程师。", "Dia seorang insinyur jembatan."],
+      ["公里", "gōng lǐ", "kilometer", "两地相距100公里。", "Jarak antara dua tempat ini 100 kilometer."],
+      ["公开", "gōng kāi", "terbuka", "选举过程必须公开透明。", "Proses pemilu harus terbuka dan transparan."],
+      ["公平", "gōng píng", "adil", "裁判必须公平公正。", "Wasit harus adil dan tidak memihak."],
+      ["功能", "gōng néng", "fungsi", "这款手机有很多新功能。", "Ponsel ini memiliki banyak fitur baru."],
+      ["贡献", "gòng xiàn", "kontribusi", "他为科学事业做出了巨大贡献。", "Dia memberikan kontribusi besar bagi dunia sains."],
+      ["购物", "gòu wù", "berbelanja", "周末我喜欢和朋友一起去购物。", "Akhir pekan saya suka berbelanja bersama teman."],
+      ["古代", "gǔ dài", "zaman kuno", "中国古代有四大发明。", "Tiongkok kuno memiliki empat penemuan besar."],
+      ["古怪", "gǔ guài", "aneh", "他性格古怪，但很有才华。", "Karakternya aneh, tapi sangat berbakat."],
+      ["骨", "gǔ", "tulang", "他摔断了腿骨。", "Dia patah tulang kaki."],
+      ["鼓励", "gǔ lì", "semangat", "你的鼓励让我充满信心。", "Doronganmu membuatku penuh percaya diri."],
+      ["鼓", "gǔ", "genderang", "春节时人们敲锣打鼓庆祝。", "Saat Imlek, orang menabuh gong dan genderang untuk merayakan."],
+      ["故乡", "gù xiāng", "tanah kelahiran", "少小离家老大回，乡音无改鬓毛衰。", "Pergi muda pulang tua, logat kampung tak berubah, rambut telah memutih."],
+      ["顾客", "gù kè", "konsumen", "满足顾客需求是企业的责任。", "Memenuhi kebutuhan pelanggan adalah tanggung jawab perusahaan."],
+      ["股份制", "gǔ fèn zhì", "sistem saham", "现代企业多采用股份制。", "Perusahaan modern banyak yang menerapkan sistem saham."],
+      ["股份公司", "gǔ fèn gōng sī", "PT", "这是一家大型股份公司。", "Ini adalah perusahaan publik berskala besar."],
+      ["工艺", "gōng yì", "kerajinan", "中国传统工艺历史悠久。", "Kerajinan tradisional Tiongkok memiliki sejarah panjang."],
+      ["工夫", "gōng fu", "waktu & usaha", "学好中文需要下工夫。", "Menguasai bahasa Mandarin membutuhkan waktu dan usaha."],
+      ["工", "gōng", "pekerjaan", "他今天加班了，很辛苦。", "Dia lembur hari ini, sangat melelahkan."],
+      ["工资", "gōng zī", "gaji", "最低工资标准每年调整。", "Standar upah minimum disesuaikan setiap tahun."],
+      ["工厂", "gōng chǎng", "pabrik", "这座工厂生产电动汽车。", "Pabrik ini memproduksi mobil listrik."],
+      ["工具", "gōng jù", "perkakas", "修理电脑需要专业工具。", "Memperbaiki komputer membutuhkan peralatan khusus."],
+      ["工作", "gōng zuò", "pekerjaan", "他热爱自己的工作。", "Dia mencintai pekerjaannya."],
+      ["供求", "gōng qiú", "penawaran dan permintaan", "价格由供求关系决定。", "Harga ditentukan oleh hukum penawaran dan permintaan."],
+      ["供应", "gōng yìng", "menyediakan", "超市保证商品供应充足。", "Supermarket menjamin ketersediaan barang yang cukup."],
+      ["供", "gōng", "menyediakan", "政府为居民供水供电。", "Pemerintah menyediakan air dan listrik untuk warga."],
+      ["购物", "gòu wù", "belanja", "网购已成为主要购物方式。", "Belanja daring telah menjadi cara utama berbelanja."],
+      ["够", "gòu", "memadai", "时间够吗？", "Apakah waktunya cukup?"],
+      ["估计", "gū jì", "perkiraan", "据估计，观众人数超过一万人。", "Diperkirakan, jumlah penonton melebihi sepuluh ribu orang."],
+      ["孤独", "gū dú", "sendirian", "独居老人需要社会关爱。", "Lansia yang tinggal sendiri membutuhkan perhatian sosial."],
+      ["姑", "gū", "bibi", "我姑姑是医生。", "Bibiku adalah dokter."],
+      ["姑娘", "gū niang", "gadis", "那位穿红衣服的姑娘真漂亮。", "Gadis yang mengenakan baju merah itu sangat cantik."],
+      ["古代", "gǔ dài", "masa lampau", "研究古代文化很有意义。", "Mempelajari budaya kuno sangat bermakna."],
+      ["故障", "gù zhàng", "kerusakan", "电脑出现故障，无法开机。", "Komputer mengalami kerusakan, tidak bisa dinyalakan."],
+      ["骨头", "gǔ tou", "tulang", "鸡汤里有骨头。", "Di sup ayam ada tulangnya."],
+      ["股票", "gǔ piào", "saham", "他投资股票赚了钱。", "Dia berinvestasi saham dan mendapat untung."],
+      ["股东", "gǔ dōng", "pemegang saham", "小股东的权利应得到保护。", "Hak pemegang saham minoritas harus dilindungi."],
+      ["股份", "gǔ fèn", "bagian saham", "每股价格是10元。", "Harga per saham adalah 10 yuan."]
+    ];
+
+    // 🎵 Sound Effects
+    const soundCorrect = new Audio("audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAA=");
+    const soundWrong = new Audio("audio/wav;base64,UklGRhwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAACABAAZGF0YQwAAAA=");
+
+    // Speech Synthesis
+    const synth = window.speechSynthesis;
+    let voices = [];
+    let currentIndex = 0;
+    let score = 0;
+    let mode = "learn";
+    let timerId = null;
+    let timer = 2100; // 35 menit = 2100 detik
+    const mistakes = [];
+
+    function loadVoices() {
+      voices = synth.getVoices().filter(v => v.lang.includes('zh'));
+    }
+
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    function speak(text, rate = 0.9) {
+      if (synth.speaking) synth.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-CN';
+      utterance.rate = rate;
+      utterance.pitch = 1.0;
+      
+      const mandarinVoice = voices.find(v => v.lang === 'zh-CN') || 
+                           voices.find(v => v.lang.startsWith('zh')) || 
+                           voices[0];
+      if (mandarinVoice) utterance.voice = mandarinVoice;
+      
+      synth.speak(utterance);
+    }
+
+    function colorizePinyin(pinyin) {
+      const tones = { '1': 'tone1', '2': 'tone2', '3': 'tone3', '4': 'tone4', '5': 'tone5' };
+      return pinyin.split(' ').map(syl => {
+        const match = syl.match(/([a-züöê]+)([1-5])?/i);
+        if (!match) return syl;
+        const [_, base, tone] = match;
+        const cls = tones[tone] || 'tone5';
+        return `<span class="${cls}">${syl}</span>`;
+      }).join(' ');
+    }
+
+    // === Mode Pembelajaran ===
+    function startLearn() {
+      mode = "learn";
+      currentIndex = 0;
+      document.getElementById('screen-start').classList.remove('active');
+      document.getElementById('screen-learn').classList.add('active');
+      loadLearnWord();
+    }
+
+    function loadLearnWord() {
+      if (currentIndex < 0) currentIndex = 0;
+      if (currentIndex >= WORDS.length) currentIndex = WORDS.length - 1;
+      
+      const word = WORDS[currentIndex];
+      document.getElementById('learn-hanzi').textContent = word[0];
+      document.getElementById('learn-pinyin').innerHTML = colorizePinyin(word[1]);
+      document.getElementById('learn-example-zh').textContent = word[3];
+      document.getElementById('learn-example-id').textContent = word[4];
+      document.getElementById('learn-current').textContent = currentIndex + 1;
+      
+      const progress = ((currentIndex) / WORDS.length) * 100;
+      document.getElementById('learn-progress').style.width = `${progress}%`;
+    }
+
+    // === Mode Game ===
+    function startGame(timed) {
+      mode = timed ? "timer" : "practice";
+      currentIndex = 0; score = 0; mistakes.length = 0;
+      document.getElementById('screen-start').classList.remove('active');
+      document.getElementById('screen-game').classList.add('active');
+      
+      if (timed) {
+        timer = 2100;
+        document.getElementById('time').textContent = timer;
+        document.getElementById('timer-display').style.display = 'flex';
+        timerId = setInterval(() => {
+          timer--;
+          document.getElementById('time').textContent = timer;
+          if (timer <= 0) endGame();
+        }, 1000);
+      } else {
+        document.getElementById('timer-display').style.display = 'none';
+      }
+      
+      loadGameWord();
+    }
+
+    function loadGameWord() {
+      if (currentIndex >= WORDS.length) return endGame();
+      
+      const word = WORDS[currentIndex];
+      document.getElementById('hanzi').textContent = word[0];
+      document.getElementById('pinyin').innerHTML = "(pinyin akan muncul setelah menjawab)";
+      document.getElementById('pinyin').style.opacity = "0.4";
+      document.getElementById('example-container').style.display = "none";
+      document.getElementById('game-current').textContent = currentIndex + 1;
+      document.getElementById('score').textContent = score;
+      
+      // Progress
+      const progress = (currentIndex / WORDS.length) * 100;
+      document.getElementById('game-progress').style.width = `${progress}%`;
+      
+      // Options
+      document.getElementById('options').innerHTML = '';
+      const allMeanings = WORDS.map(w => w[2]);
+      const distractors = allMeanings
+        .filter(m => m !== word[2])
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 3);
+      const options = [word[2], ...distractors].sort(() => 0.5 - Math.random());
+      
+      options.forEach(opt => {
+        const el = document.createElement('div');
+        el.className = 'option';
+        el.textContent = opt.length > 35 ? opt.substring(0, 32) + "…" : opt;
+        el.onclick = () => selectOption(opt, word);
+        document.getElementById('options').appendChild(el);
+      });
+    }
+
+    function selectOption(selected, word) {
+      const options = document.querySelectorAll('.option');
+      let isCorrect = false;
+      
+      options.forEach(el => {
+        if (el.textContent.replace("…", "") === word[2].substring(0, el.textContent.replace("…", "").length)) {
+          el.classList.add('correct');
+          isCorrect = (selected === word[2] || selected.startsWith(word[2].substring(0, 20)));
+        } else if (el.textContent.replace("…", "") === selected.replace("…", "")) {
+          el.classList.add('wrong');
+        }
+      });
+      
+      // Tampilkan pinyin & kalimat
+      document.getElementById('pinyin').innerHTML = colorizePinyin(word[1]);
+      document.getElementById('pinyin').style.opacity = "1";
+      document.getElementById('example-zh').textContent = word[3];
+      document.getElementById('example-id').textContent = word[4];
+      document.getElementById('example-container').style.display = "block";
+      
+      if (isCorrect) {
+        score++;
+        soundCorrect.play();
+      } else {
+        soundWrong.play();
+        mistakes.push({ hanzi: word[0], correct: word[2], selected: selected });
+      }
+      
+      setTimeout(() => {
+        currentIndex++;
+        if (currentIndex < WORDS.length) loadGameWord();
+        else endGame();
+      }, 1000);
+    }
+
+    function endGame() {
+      if (timerId) clearInterval(timerId);
+      document.getElementById('screen-game').classList.remove('active');
+      document.getElementById('screen-end').classList.add('active');
+      
+      const finalScore = document.getElementById('final-score');
+      const percentEl = document.getElementById('percent');
+      const percent = Math.round((score / WORDS.length) * 100);
+      
+      finalScore.textContent = score;
+      percentEl.textContent = percent;
+      
+      const summary = document.getElementById('mistakes-summary');
+      if (mistakes.length === 0) {
+        summary.innerHTML = `<p><strong>Luar Biasa!</strong> 🎓<br>Kamu sudah menguasai semua 300 kata HSK 3 dalam Hanzi murni — tingkat menengah tercapai!</p>`;
+      } else {
+        let html = `<p><strong>${mistakes.length} kata untuk diulang:</strong></p><ul style="padding-left:20px;">`;
+        mistakes.slice(0, 8).forEach(m => {
+          const word = WORDS.find(w => w[0] === m.hanzi && w[2] === m.correct);
+          html += `<li><span style="color:#4a148c;font-weight:bold;">${m.hanzi}</span> → <span style="color:#0288d1;">${m.correct}</span></li>`;
+        });
+        if (mistakes.length > 8) html += `<li>... dan ${mistakes.length - 8} kata lainnya</li>`;
+        html += `</ul><p>💡 <strong>Saran:</strong> Fokus pada kata abstrak & nuansa makna — kunci penguasaan HSK 3.</p>`;
+        summary.innerHTML = html;
+      }
+    }
+
+    // Event Listeners
+    document.getElementById('btn-mode-learn').onclick = startLearn;
+    document.getElementById('btn-mode-timer').onclick = () => startGame(true);
+    document.getElementById('btn-mode-practice').onclick = () => startGame(false);
+    
+    // Learn screen controls
+    document.getElementById('btn-learn-word').onclick = () => {
+      const word = WORDS[currentIndex];
+      speak(word[0], 1.0);
+    };
+    document.getElementById('btn-learn-sentence').onclick = () => {
+      const word = WORDS[currentIndex];
+      speak(word[3], 0.85);
+    };
+    document.getElementById('btn-learn-prev').onclick = () => {
+      currentIndex--;
+      loadLearnWord();
+    };
+    document.getElementById('btn-learn-next').onclick = () => {
+      currentIndex++;
+      loadLearnWord();
+    };
+    
+    // Game screen controls
+    document.getElementById('btn-play-word').onclick = () => {
+      const word = WORDS[currentIndex];
+      speak(word[0], 1.0);
+    };
+    document.getElementById('btn-play-sentence').onclick = () => {
+      const word = WORDS[currentIndex];
+      speak(word[3], 0.85);
+    };
+    document.getElementById('btn-reveal').onclick = () => {
+      const word = WORDS[currentIndex];
+      document.getElementById('pinyin').innerHTML = colorizePinyin(word[1]);
+      document.getElementById('pinyin').style.opacity = "1";
+      document.getElementById('example-zh').textContent = word[3];
+      document.getElementById('example-id').textContent = word[4];
+      document.getElementById('example-container').style.display = "block";
+    };
+    
+    document.getElementById('btn-retry').onclick = () => {
+      document.getElementById('screen-end').classList.remove('active');
+      document.getElementById('screen-start').classList.add('active');
+    };
+    
+    document.body.addEventListener('click', loadVoices, { once: true });
+  </script>
+</body>
+</html>
